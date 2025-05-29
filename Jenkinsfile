@@ -13,11 +13,11 @@ pipeline {
             }
         }
 
-        stage('Check Workspace After Checkout') {
+        stage('Check Cloned Content') {
             steps {
                 sh '''
-                    echo "Exploration de l'espace de travail : $(pwd)"
-                    find . -name "package.json"
+                    echo "Contenu de l'espace de travail : $(pwd)"
+                    find . -type f
                 '''
             }
         }
@@ -41,7 +41,7 @@ pipeline {
 
         stage('Build Angular App') {
             steps {
-                dir('microservice-source-code/release2/k8s-fleetman-webapp-angular') {
+                dir('Fleet-Managment-Pipeline') {
                     sh '''
                         #!/bin/bash
                         echo "Répertoire actuel : $(pwd)"
@@ -69,14 +69,14 @@ pipeline {
         stage('Check workspace') {
             steps {
                 sh 'echo "📂 Répertoire actuel : $(pwd)"'
-                sh 'ls -l microservice-source-code/release2/k8s-fleetman-webapp-angular'
+                sh 'ls -l Fleet-Managment-Pipeline'
             }
         }
 
         stage('Image Build') {
             steps {
                 echo "Construction de l'image Docker..."
-                dir('microservice-source-code/release2/k8s-fleetman-webapp-angular') {
+                dir('Fleet-Managment-Pipeline') {
                     sh 'docker build -t ghada13/webapp:${commit_id} .'
                 }
                 echo "Construction terminée"
@@ -97,7 +97,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo "Déploiement vers Kubernetes"
-                dir('microservice-source-code/release2/k8s-fleetman-webapp-angular') {
+                dir('Fleet-Managment-Pipeline') {
                     sh "sed -i 's|richardchesterwood/k8s-fleetman-webapp-angular:release2|ghada13/webapp:${commit_id}|' manifests/webapp.yaml"
                     sh 'kubectl apply -f manifests/'
                     sh 'kubectl get pods -n default'
