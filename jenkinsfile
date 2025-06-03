@@ -4,7 +4,6 @@ pipeline {
         REGISTRY = 'localhost:5000'
         IMAGE_NAME = 'webapp'
         DEPLOYMENT_FILE = '/home/admin13/webapp.yaml'
-        PROJECT_DIR = '../'  // Ajuste selon la structure (par ex. '../' pour remonter au répertoire parent)
     }
     stages {
         stage('Preparation') {
@@ -28,12 +27,10 @@ pipeline {
                 node -v
                 npm -v
                 npm install -g @angular/cli@16 || true
-                cd $PROJECT_DIR  # Change vers le répertoire du projet Angular
                 npm cache clean --force
                 npm install
                 ng version
                 ng build --prod
-                cd -  # Retourne au répertoire initial
                 '''
                 echo "Build complete"
             }
