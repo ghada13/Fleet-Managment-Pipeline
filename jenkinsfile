@@ -4,6 +4,7 @@ pipeline {
         REGISTRY = 'localhost:5000'
         IMAGE_NAME = 'webapp'
         DEPLOYMENT_FILE = '/home/admin13/webapp.yaml'
+        PROJECT_DIR = '../'  // Ajuste selon la structure (par ex. '../' pour remonter au répertoire parent)
     }
     stages {
         stage('Preparation') {
@@ -18,7 +19,6 @@ pipeline {
         stage('Compile') {
             steps {
                 echo "Building the webapp"
-                // Installer nvm et Node.js 16
                 sh '''
                 export NVM_DIR="$HOME/.nvm"
                 [ -s "$NVM_DIR/nvm.sh" ] || curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
@@ -27,21 +27,13 @@ pipeline {
                 nvm use 16
                 node -v
                 npm -v
-                '''
-                // Installer Angular CLI v16
-                sh '''
-                export NVM_DIR="$HOME/.nvm"
-                . "$NVM_DIR/nvm.sh"
                 npm install -g @angular/cli@16 || true
-                ng version || true
-                '''
-                // Nettoyer et installer les dépendances
-                sh '''
-                export NVM_DIR="$HOME/.nvm"
-                . "$NVM_DIR/nvm.sh"
+                cd $PROJECT_DIR  # Change vers le répertoire du projet Angular
                 npm cache clean --force
                 npm install
+                ng version
                 ng build --prod
+                cd -  # Retourne au répertoire initial
                 '''
                 echo "Build complete"
             }
