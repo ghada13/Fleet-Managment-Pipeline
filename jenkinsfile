@@ -1,10 +1,12 @@
 pipeline {
     agent any
+
     environment {
         REGISTRY = 'localhost:5000'
         IMAGE_NAME = 'webapp'
-        DEPLOYMENT_FILE = '/home/admin13/webapp.yaml'
+        DEPLOYMENT_FILE = 'manifests/webapp.yaml'
     }
+
     stages {
         stage('Preparation') {
             steps {
@@ -15,26 +17,29 @@ pipeline {
                 }
             }
         }
+
         stage('Compile') {
             steps {
                 echo "Building the webapp"
-                sh '''
-                export NVM_DIR="$HOME/.nvm"
-                [ -s "$NVM_DIR/nvm.sh" ] || curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-                . "$NVM_DIR/nvm.sh"
-                nvm install 16
-                nvm use 16
-                node -v
-                npm -v
-                npm install -g @angular/cli@16 || true
-                npm cache clean --force
-                npm install
-                ng version
-                ng build --prod
-                '''
+                dir('webapp') {
+                    sh '''
+                    export NVM_DIR="$HOME/.nvm"
+                    [ -s "$NVM_DIR/nvm.sh" ] || curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+                    . "$NVM_DIR/nvm.sh"
+                    nvm install 16
+                    nvm use 16
+                    node -v
+                    npm -v
+                    npm install -g @angular/cli@16
+                    npm cache clean --force
+                    npm install
+                    ng build --configuration production
+                    '''
+                }
                 echo "Build complete"
             }
         }
+
         stage('Build') {
             steps {
                 echo "Building docker image ${REGISTRY}/${IMAGE_NAME}:${COMMIT_ID}"
@@ -45,18 +50,20 @@ pipeline {
                 echo "Push complete"
             }
         }
+
         stage('Deploy to Minikube') {
             steps {
                 echo 'Starting Minikube if not running...'
                 sh 'minikube status || minikube start'
                 echo 'Deploying to Minikube...'
                 sh "minikube image load ${REGISTRY}/${IMAGE_NAME}:${COMMIT_ID}"
-                sh "kubectl set image deployment/webapp webapp=${REGISTRY}/${IMAGE_NAME}:${COMMIT_ID} --namespace=k8s-fleetman"
+                sh "kubectl set image deployment/webapp webapp=${REGISTRY}/${IMAGE_NAME}:${COMMIT_ID} --namespace=k8s-fleetman || true"
                 sh "kubectl apply -f ${DEPLOYMENT_FILE}"
                 echo 'Deployment complete'
             }
         }
     }
+
     post {
         always {
             echo 'Cleaning up...'
@@ -68,3 +75,4 @@ pipeline {
         }
     }
 }
+
